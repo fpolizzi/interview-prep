@@ -1,0 +1,39 @@
+### Java / Maven ###
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+### Python ###
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+### Node / TypeScript ###
+node_modules/
+dist/
+.env
+
+### IDEs ###
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### OS ###
+.DS_Store
+Thumbs.db
