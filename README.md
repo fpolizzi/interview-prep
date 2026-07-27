@@ -15,6 +15,11 @@ A collection of hands-on coding interview projects organized by language and int
 | Java | Pair Programming | [Bookstore API](java/pair-programming/bookstore-api/) | Spring Boot 4, Java 25, H2, JPA | Done |
 | Java | Pair Programming | [Todo API](java/pair-programming/todo-api/) | Spring Boot 4, Java 25, H2, JPA | Done |
 | Java | Pair Programming | [Delivery Food System](java/pair-programming/delivery-food-system/) | Spring Boot 3.4, Java 21, MongoDB, Kafka | Done |
+| Java | Pair Programming | [Flight Feasibility API](java/pair-programming/flight-feasibility/) | Spring Boot 4, Java 25, Maven | Done |
+
+> **Note on formats:** most projects hand the candidate a working codebase with intentional issues to
+> find and fix. **Flight Feasibility** is different — it is *build from scratch* against a real,
+> deliberately ambiguous assessment brief, with only the HTTP contract provided.
 
 ## Structure
 
@@ -24,7 +29,8 @@ interviews/
 │   ├── pair-programming/
 │   │   ├── bookstore-api/
 │   │   ├── todo-api/
-│   │   └── delivery-food-system/
+│   │   ├── delivery-food-system/
+│   │   └── flight-feasibility/
 │   ├── take-home/
 │   └── system-design/
 ├── python/
