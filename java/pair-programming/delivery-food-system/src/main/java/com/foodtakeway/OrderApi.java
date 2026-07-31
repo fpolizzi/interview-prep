@@ -1,5 +1,7 @@
 package com.foodtakeway;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,15 +22,17 @@ public class OrderApi {
     @PostMapping
     public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
         System.out.println("Order received: " + orderRequest);
-        orderService.placeOrder(orderRequest.amount, orderRequest.userEmail);
+        orderService.placeOrder(orderRequest.getAmount(), orderRequest.getUserEmail());
 
         return new ResponseEntity<>("Order Placed!", HttpStatus.OK);
     }
 }
 
+@Data
+@NoArgsConstructor
 class OrderRequest {
-    String userEmail;
-    double amount;
+    private String userEmail;
+    private double amount;
 
     public OrderRequest(String userEmail, double amount) {
         this.userEmail = userEmail;

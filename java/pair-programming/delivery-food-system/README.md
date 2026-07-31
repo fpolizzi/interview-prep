@@ -80,20 +80,20 @@ src/main/java/
 
 ## Key Code Smells (for interviewer reference)
 
-| Area | Issue |
-|------|-------|
-| Persistence | Orders stored in `ArrayList` — MongoDB dependency exists but isn't used |
-| Coupling | `placeOrder()` synchronously calls `processOrder()` which blocks for 10 seconds |
-| Encapsulation | Fields are package-private, no getters/setters, no `@Id` on Order |
-| Architecture | No repository pattern, no layered architecture, business logic in service |
-| Validation | No input validation on API or domain level |
-| Error handling | No exception handling, no global error handler |
-| Logging | Uses `System.out.println` instead of SLF4J |
-| Event system | Kafka available but not integrated — events only logged to console |
-| ID generation | `Random.nextInt(1000)` — collision risk |
-| HTTP responses | Returns 200 for creation (should be 201), generic string responses |
-| Code organization | `OrderRequest` DTO nested inside controller file |
-| Testing | Only `contextLoads()` — no business logic tests |
+| Area              | Issue                                                                           |
+|-------------------|---------------------------------------------------------------------------------|
+| Persistence       | Orders stored in `ArrayList` — MongoDB dependency exists but isn't used         |
+| Coupling          | `placeOrder()` synchronously calls `processOrder()` which blocks for 10 seconds |
+| Encapsulation     | Fields are package-private, no getters/setters, no `@Id` on Order               |
+| Architecture      | No repository pattern, no layered architecture, business logic in service       |
+| Validation        | No input validation on API or domain level                                      |
+| Error handling    | No exception handling, no global error handler                                  |
+| Logging           | Uses `System.out.println` instead of SLF4J                                      |
+| Event system      | Kafka available but not integrated — events only logged to console              |
+| ID generation     | `Random.nextInt(1000)` — collision risk                                         |
+| HTTP responses    | Returns 200 for creation (should be 201), generic string responses              |
+| Code organization | `OrderRequest` DTO nested inside controller file                                |
+| Testing           | Only `contextLoads()` — no business logic tests                                 |
 
 ## Sample Requests
 
@@ -115,5 +115,5 @@ See [`INTERVIEW_TASKS.md`](INTERVIEW_TASKS.md) for the full task list organized 
 - Let candidates **explore the codebase for 10 minutes** before starting
 - The `examples/` package shows how MongoDB and Kafka work — candidates can reference it
 - Encourage candidates to **talk through what they see** before coding
-- If a change would take too long, a **TODO comment** is sufficient
+- If a change takes too long, a **TODO comment** is enough
 - Focus on **thought process and prioritization** as much as implementation

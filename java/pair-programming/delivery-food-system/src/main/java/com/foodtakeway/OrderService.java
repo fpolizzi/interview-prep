@@ -8,8 +8,8 @@ import java.util.Random;
 
 @Service
 class OrderService {
-    List<Order> orders = new ArrayList<>();
-    Random random = new Random();
+    private List<Order> orders = new ArrayList<>();
+    private Random random = new Random();
 
     // Receive order and persist
     public void placeOrder(double amount, String userEmail) {
@@ -18,7 +18,7 @@ class OrderService {
         orders.add(order);
         System.out.println("Order placed: " + orderId + " Amount: " + amount + " user: " + userEmail);
         processOrder(order);
-        notifyEvent("OrderProcessed", order.orderId);
+        notifyEvent("OrderProcessed", order.getOrderId());
     }
 
     /**
@@ -27,12 +27,12 @@ class OrderService {
      **/
     // Process order (imagine it can be invoicing, notification, stock change, etc.)
     private void processOrder(Order order) {
-        if (order.amount > 100) {
-            order.amount *= 0.9; // 10% discount for orders above 100
+        if (order.getAmount() > 100) {
+            order.setAmount(order.getAmount() * 0.9); // 10% discount for orders above 100
         }
         order.longRunningOrderProcess();
-        order.isProcessed = true;
-        System.out.println("Order processed: " + order.orderId + " Final Amount: " + order.amount + " user: " + order.userEmail);
+        order.setProcessed(true);
+        System.out.println("Order processed: " + order.getOrderId() + " Final Amount: " + order.getAmount() + " user: " + order.getUserEmail());
     }
 
 
