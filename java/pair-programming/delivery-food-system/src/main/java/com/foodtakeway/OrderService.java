@@ -1,22 +1,25 @@
 package com.foodtakeway;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+@Slf4j
 @Service
 class OrderService {
-    private List<Order> orders = new ArrayList<>();
-    private Random random = new Random();
+    private final List<Order> orders = new ArrayList<>();
+    private final Random random = new Random();
 
     // Receive order and persist
     public void placeOrder(double amount, String userEmail) {
         String orderId = "ORD" + random.nextInt(1000);
         Order order = new Order(orderId, amount, userEmail);
         orders.add(order);
-        System.out.println("Order placed: " + orderId + " Amount: " + amount + " user: " + userEmail);
+        log.info("Order placed: {} Amount: {} user: {}",
+                orderId, amount, userEmail);
         processOrder(order);
         notifyEvent("OrderProcessed", order.getOrderId());
     }
@@ -32,11 +35,12 @@ class OrderService {
         }
         order.longRunningOrderProcess();
         order.setProcessed(true);
-        System.out.println("Order processed: " + order.getOrderId() + " Final Amount: " + order.getAmount() + " user: " + order.getUserEmail());
+        log.info("Order processed: {} Final Amount: {} user: {}",
+                order.getOrderId(), order.getAmount(), order.getUserEmail());
     }
 
 
     private void notifyEvent(String event, String data) {
-        System.out.println("Event Dispatched: " + event + " -> " + data);
+        log.info("Event Dispatched: {} -> {}", event, data);
     }
 }
