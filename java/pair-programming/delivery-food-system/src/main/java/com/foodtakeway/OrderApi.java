@@ -1,5 +1,10 @@
 package com.foodtakeway;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +27,8 @@ public class OrderApi {
     }
 
     @PostMapping
-    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<String> placeOrder(
+            @Valid @RequestBody OrderRequest orderRequest) {
 
         log.info("Order received: {}", orderRequest);
         orderService.placeOrder(orderRequest.getAmount(), orderRequest.getUserEmail());
@@ -34,7 +40,11 @@ public class OrderApi {
 @Data
 @NoArgsConstructor
 class OrderRequest {
+    @NotBlank(message = "Email must not be blank")
+    @NotNull(message = "Email must not be null")
+    @Email(message = "Email must be a valid email address")
     private String userEmail;
+    @Positive(message = "Amount must be positive")
     private double amount;
 
     public OrderRequest(String userEmail, double amount) {

@@ -1,5 +1,9 @@
 spring:
   application.name: "delivery-food-system"
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
 
   kafka:
     producer:
