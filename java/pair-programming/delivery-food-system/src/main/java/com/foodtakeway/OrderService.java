@@ -14,7 +14,7 @@ class OrderService {
     private final Random random = new Random();
 
     // Receive order and persist
-    public void placeOrder(double amount, String userEmail) {
+    public Order placeOrder(double amount, String userEmail) {
         String orderId = "ORD" + random.nextInt(1000);
         Order order = new Order(orderId, amount, userEmail);
         orders.add(order);
@@ -22,6 +22,7 @@ class OrderService {
                 orderId, amount, userEmail);
         processOrder(order);
         notifyEvent("OrderProcessed", order.getOrderId());
+        return order;
     }
 
     /**
