@@ -2,7 +2,6 @@ package com.foodtakeway;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
@@ -52,7 +51,6 @@ public class OrderApi {
 @Data
 @NoArgsConstructor
 class OrderRequest {
-    @NotBlank(message = "Email must not be blank")
     @NotNull(message = "Email must not be null")
     @Email(message = "Email must be a valid email address")
     private String userEmail;
