@@ -1,34 +1,61 @@
 package com.foodtakeway;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("order")
 public class OrderApi {
 
-    @Autowired
-    OrderService orderService;
+    private OrderService orderService;
 
-    @GetMapping("hello")
-    public ResponseEntity<String> hello() {
-        return new ResponseEntity<>("Hello World!", HttpStatus.OK);
+    public OrderApi(OrderService orderService) {
+        this.orderService = orderService;
     }
 
     @PostMapping
-    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
-        System.out.println("Order received: " + orderRequest);
-        orderService.placeOrder(orderRequest.amount, orderRequest.userEmail);
+    public ResponseEntity<OrderResponseDto> placeOrder(
+            @Valid @RequestBody OrderRequest orderRequest) {
 
-        return new ResponseEntity<>("Order Placed!", HttpStatus.OK);
+        log.info("order received: {}", orderRequest);
+
+        Order createdOrder = orderService.placeOrder(
+                orderRequest.getAmount(),
+                orderRequest.getUserEmail()
+        );
+
+        OrderResponseDto response = new OrderResponseDto(
+                createdOrder.getOrderId(),
+                createdOrder.getAmount(),
+                createdOrder.getUserEmail(),
+                createdOrder.isProcessed()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 }
 
+@Data
+@NoArgsConstructor
 class OrderRequest {
-    String userEmail;
-    double amount;
+    @NotNull(message = "Email must not be null")
+    @Email(message = "Email must be a valid email address")
+    private String userEmail;
+    @Positive(message = "Amount must be positive")
+    private double amount;
 
     public OrderRequest(String userEmail, double amount) {
         this.userEmail = userEmail;

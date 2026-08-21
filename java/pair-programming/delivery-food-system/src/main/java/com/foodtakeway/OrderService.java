@@ -1,24 +1,28 @@
 package com.foodtakeway;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+@Slf4j
 @Service
 class OrderService {
-    List<Order> orders = new ArrayList<>();
-    Random random = new Random();
+    private final List<Order> orders = new ArrayList<>();
+    private final Random random = new Random();
 
     // Receive order and persist
-    public void placeOrder(double amount, String userEmail) {
+    public Order placeOrder(double amount, String userEmail) {
         String orderId = "ORD" + random.nextInt(1000);
         Order order = new Order(orderId, amount, userEmail);
         orders.add(order);
-        System.out.println("Order placed: " + orderId + " Amount: " + amount + " user: " + userEmail);
+        log.info("Order placed: {} Amount: {} user: {}",
+                orderId, amount, userEmail);
         processOrder(order);
-        notifyEvent("OrderProcessed", order.orderId);
+        notifyEvent("OrderProcessed", order.getOrderId());
+        return order;
     }
 
     /**
@@ -27,16 +31,17 @@ class OrderService {
      **/
     // Process order (imagine it can be invoicing, notification, stock change, etc.)
     private void processOrder(Order order) {
-        if (order.amount > 100) {
-            order.amount *= 0.9; // 10% discount for orders above 100
+        if (order.getAmount() > 100) {
+            order.setAmount(order.getAmount() * 0.9); // 10% discount for orders above 100
         }
         order.longRunningOrderProcess();
-        order.isProcessed = true;
-        System.out.println("Order processed: " + order.orderId + " Final Amount: " + order.amount + " user: " + order.userEmail);
+        order.setProcessed(true);
+        log.info("Order processed: {} Final Amount: {} user: {}",
+                order.getOrderId(), order.getAmount(), order.getUserEmail());
     }
 
 
     private void notifyEvent(String event, String data) {
-        System.out.println("Event Dispatched: " + event + " -> " + data);
+        log.info("Event Dispatched: {} -> {}", event, data);
     }
 }
