@@ -7,7 +7,7 @@ import lombok.Builder;
 
 @Builder
 public record OrderResponseDto(
-        String orderId,
+        java.util.UUID orderId,
         double amount,
         String userEmail,
         boolean isProcessed

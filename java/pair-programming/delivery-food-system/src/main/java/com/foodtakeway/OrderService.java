@@ -9,7 +9,7 @@ import java.util.Random;
 @Slf4j
 @Service
 class OrderService {
-    // private final List<Order> orders = new ArrayList<>();
+
     private final Random random = new Random();
 
     private final OrderRepository orderRepository;
@@ -20,7 +20,7 @@ class OrderService {
 
     // Receive order and persist
     public OrderResponseDto placeOrder(double amount, String userEmail) {
-        //String orderId = "ORD" + random.nextInt(1000);
+
         Order order = new Order(amount, userEmail);
         orderRepository.save(order);
 
@@ -29,7 +29,7 @@ class OrderService {
 
         processOrder(order);
 
-        notifyEvent("OrderProcessed", order.getOrderId());
+        notifyEvent("OrderProcessed", String.valueOf(order.getOrderId()));
 
         return new OrderResponseDto(
                 order.getOrderId(),
