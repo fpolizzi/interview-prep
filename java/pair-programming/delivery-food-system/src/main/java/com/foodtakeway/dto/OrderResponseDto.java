@@ -1,4 +1,4 @@
-package com.foodtakeway;
+package com.foodtakeway.dto;
 
 /**
  * Created by fpolizzi on 8/18/26

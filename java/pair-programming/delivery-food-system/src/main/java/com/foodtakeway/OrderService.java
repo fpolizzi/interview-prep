@@ -1,5 +1,6 @@
 package com.foodtakeway;
 
+import com.foodtakeway.dto.OrderResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -14,15 +15,20 @@ class OrderService {
     private final Random random = new Random();
 
     // Receive order and persist
-    public Order placeOrder(double amount, String userEmail) {
+    public OrderResponseDto placeOrder(double amount, String userEmail) {
         String orderId = "ORD" + random.nextInt(1000);
-        Order order = new Order(orderId, amount, userEmail);
+        Order order = new Order(amount, userEmail);
         orders.add(order);
         log.info("Order placed: {} Amount: {} user: {}",
-                orderId, amount, userEmail);
+                order.getOrderId(), amount, userEmail);
         processOrder(order);
         notifyEvent("OrderProcessed", order.getOrderId());
-        return order;
+        return new OrderResponseDto(
+                order.getOrderId(),
+                order.getAmount(),
+                order.getUserEmail(),
+                order.isProcessed()
+        );
     }
 
     /**
@@ -37,7 +43,7 @@ class OrderService {
         order.longRunningOrderProcess();
         order.setProcessed(true);
         log.info("Order processed: {} Final Amount: {} user: {}",
-                order.getOrderId(), order.getAmount(), order.getUserEmail());
+                order.getAmount(), order.getOrderId(), order.getUserEmail());
     }
 
 

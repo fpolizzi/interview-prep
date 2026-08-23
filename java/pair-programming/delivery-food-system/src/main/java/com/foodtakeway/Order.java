@@ -26,6 +26,11 @@ class Order {
         this.userEmail = userEmail;
     }
 
+    public Order(double amount, String userEmail) {
+        this.amount = amount;
+        this.userEmail = userEmail;
+    }
+
     // This method should stay as it is. Just pretend it is a long-time operation we need to do.
     public void longRunningOrderProcess() {
         try {
