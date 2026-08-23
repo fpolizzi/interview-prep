@@ -4,25 +4,33 @@ import com.foodtakeway.dto.OrderResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 @Slf4j
 @Service
 class OrderService {
-    private final List<Order> orders = new ArrayList<>();
+    // private final List<Order> orders = new ArrayList<>();
     private final Random random = new Random();
+
+    private final OrderRepository orderRepository;
+
+    OrderService(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
 
     // Receive order and persist
     public OrderResponseDto placeOrder(double amount, String userEmail) {
-        String orderId = "ORD" + random.nextInt(1000);
+        //String orderId = "ORD" + random.nextInt(1000);
         Order order = new Order(amount, userEmail);
-        orders.add(order);
+        orderRepository.save(order);
+
         log.info("Order placed: {} Amount: {} user: {}",
                 order.getOrderId(), amount, userEmail);
+
         processOrder(order);
+
         notifyEvent("OrderProcessed", order.getOrderId());
+
         return new OrderResponseDto(
                 order.getOrderId(),
                 order.getAmount(),
@@ -45,7 +53,6 @@ class OrderService {
         log.info("Order processed: {} Final Amount: {} user: {}",
                 order.getAmount(), order.getOrderId(), order.getUserEmail());
     }
-
 
     private void notifyEvent(String event, String data) {
         log.info("Event Dispatched: {} -> {}", event, data);
