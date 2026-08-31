@@ -1,21 +1,22 @@
-package com.foodtakeway;
+package com.foodtakeway.service;
 
+import com.foodtakeway.Order;
+import com.foodtakeway.OrderRepository;
 import com.foodtakeway.dto.OrderResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Random;
-
 @Slf4j
 @Service
-class OrderService {
-
-    private final Random random = new Random();
+public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final DiscountService discountService;
 
-    OrderService(OrderRepository orderRepository) {
+
+    OrderService(OrderRepository orderRepository, DiscountService discountService) {
         this.orderRepository = orderRepository;
+        this.discountService = discountService;
     }
 
     // Receive order and persist
@@ -45,13 +46,14 @@ class OrderService {
      **/
     // Process order (imagine it can be invoicing, notification, stock change, etc.)
     private void processOrder(Order order) {
-        if (order.getAmount() > 100) {
-            order.setAmount(order.getAmount() * 0.9); // 10% discount for orders above 100
-        }
+
+        discountService.calculateDiscount(order);
+
         order.longRunningOrderProcess();
         order.setProcessed(true);
+
         log.info("Order processed: {} Final Amount: {} user: {}",
-                order.getAmount(), order.getOrderId(), order.getUserEmail());
+                order.getOrderId(), order.getAmount(), order.getUserEmail());
     }
 
     private void notifyEvent(String event, String data) {

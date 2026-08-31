@@ -17,6 +17,9 @@ spring:
       auto-offset-reset: earliest
     bootstrap-servers: "localhost:9092"
 
-  data:
-    mongodb:
-      uri: "mongodb://localhost:27017/mongodatabase"
+  discount:
+    percentage: 0.9
+    threshold: 100
+
+  mongodb:
+    uri: "mongodb://localhost:27017/mongodatabase"

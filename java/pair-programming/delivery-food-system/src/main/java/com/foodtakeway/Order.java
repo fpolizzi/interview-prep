@@ -14,7 +14,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Document
-class Order {
+public class Order {
     @Id
     private UUID orderId;
     private double amount;
