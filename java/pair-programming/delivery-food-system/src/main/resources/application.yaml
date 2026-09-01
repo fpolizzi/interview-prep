@@ -4,7 +4,6 @@ spring:
     error:
       include-message: always
       include-binding-errors: always
-
   kafka:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -16,7 +15,9 @@ spring:
       group-id: "consumer-group"
       auto-offset-reset: earliest
     bootstrap-servers: "localhost:9092"
+  mongodb:
+    uri: "mongodb://localhost:27017/mongodatabase"
 
-  data:
-    mongodb:
-      uri: "mongodb://localhost:27017/mongodatabase"
+discount:
+  percentage: 0.9
+  threshold: 100

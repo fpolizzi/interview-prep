@@ -7,20 +7,22 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.UUID;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
 @Document
-class Order {
+public class Order {
     @Id
-    private String orderId;
+    private UUID orderId;
     private double amount;
     private String userEmail;
     private boolean isProcessed;
 
-    public Order(String orderId, double amount, String userEmail) {
-        this.orderId = orderId;
+    public Order(double amount, String userEmail) {
+        this.orderId = UUID.randomUUID();
         this.amount = amount;
         this.isProcessed = false;
         this.userEmail = userEmail;

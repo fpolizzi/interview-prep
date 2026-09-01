@@ -1,13 +1,14 @@
-package com.foodtakeway;
+package com.foodtakeway.dto;
 
 /**
  * Created by fpolizzi on 8/18/26
  */
 import lombok.Builder;
+import java.util.UUID;
 
 @Builder
 public record OrderResponseDto(
-        String orderId,
+        UUID orderId,
         double amount,
         String userEmail,
         boolean isProcessed
