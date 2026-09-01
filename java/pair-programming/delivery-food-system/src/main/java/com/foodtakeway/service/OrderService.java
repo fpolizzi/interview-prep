@@ -14,11 +14,13 @@ public class OrderService {
     private final DiscountService discountService;
 
 
-    OrderService(OrderRepository orderRepository, DiscountService discountService) {
+    public OrderService(OrderRepository orderRepository, DiscountService discountService) {
         this.orderRepository = orderRepository;
         this.discountService = discountService;
     }
 
+    // TODO do some research about masking log messages /
+    //  logging the right way when sensible data is involved
     // Receive order and persist
     public OrderResponseDto placeOrder(double amount, String userEmail) {
 
