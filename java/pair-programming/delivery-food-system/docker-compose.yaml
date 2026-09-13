@@ -1,4 +1,4 @@
-name: deliveryfoodsystem
+name: delivery-food-system
 services:
   redpanda:
     image: redpandadata/redpanda:v24.1.1

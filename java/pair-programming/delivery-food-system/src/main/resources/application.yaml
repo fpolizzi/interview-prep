@@ -7,17 +7,24 @@ spring:
   kafka:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
     consumer:
-      properties.spring.json.trusted.packages: com.foodtakeway.codechallenge.examples.event
+      properties:
+        spring.json.trusted.packages: "*"
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
       group-id: "consumer-group"
       auto-offset-reset: earliest
     bootstrap-servers: "localhost:9092"
+  data:
+    mongodb:
+      uri: "mongodb://localhost:27017/mongodatabase"
   mongodb:
     uri: "mongodb://localhost:27017/mongodatabase"
+    uuid-representation: standard
+    representation:
+      uuid: standard
 
 discount:
-  percentage: 0.9
+  percentage: 0.10
   threshold: 100
