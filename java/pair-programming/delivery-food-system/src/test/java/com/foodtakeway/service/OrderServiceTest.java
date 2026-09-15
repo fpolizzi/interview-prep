@@ -1,10 +1,11 @@
 package com.foodtakeway.service;
 
-import com.foodtakeway.Order;
-import com.foodtakeway.OrderRepository;
 import com.foodtakeway.dto.OrderResponseDto;
 import com.foodtakeway.event.OrderPlacedEvent;
 import com.foodtakeway.listener.OrderEventListener;
+import com.foodtakeway.model.Order;
+import com.foodtakeway.repository.OrderRepository;
+import com.foodtakeway.service.impl.OrderServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +33,7 @@ class OrderServiceTest {
     private KafkaTemplate<String, Object> kafkaTemplate;
 
     @InjectMocks
-    private OrderService underTest;
+    private OrderServiceImpl underTest;
 
     @Captor
     private ArgumentCaptor<Order> orderArgumentCaptor;

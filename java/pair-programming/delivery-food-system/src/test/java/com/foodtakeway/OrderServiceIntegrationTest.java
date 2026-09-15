@@ -3,6 +3,7 @@ package com.foodtakeway;
 import com.foodtakeway.dto.OrderResponseDto;
 import com.foodtakeway.event.OrderPlacedEvent;
 import com.foodtakeway.listener.OrderEventListener;
+import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,9 +16,8 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
@@ -62,25 +62,25 @@ class OrderServiceIntegrationTest {
         assertThat(response.isProcessed()).isFalse();
 
         // Assert: Order is immediately persisted in DB with isProcessed = false
-        Optional<Order> savedOrder = orderRepository.findById(response.orderId());
-        assertThat(savedOrder).isPresent();
-        assertThat(savedOrder.get().isProcessed()).isFalse();
+        assertThat(orderRepository.findById(response.orderId()))
+                .isPresent()
+                .hasValueSatisfying(order -> assertThat(order.isProcessed()).isFalse());
 
         // Assert: Asynchronous processing completes via Kafka listener
         // Availability polls MongoDB until the listener calculates discount and sets isProcessed = true
         await()
                 .atMost(Duration.ofSeconds(25))
                 .pollInterval(Duration.ofMillis(500))
-                .untilAsserted(() -> {
-                    Optional<Order> processedOrder = orderRepository.findById(response.orderId());
-                    assertThat(processedOrder).isPresent();
-                    assertThat(processedOrder.get().isProcessed())
-                            .as("Order should be marked as processed by Kafka consumer")
-                            .isTrue();
-                    assertThat(processedOrder.get().getAmount())
-                            .as("Discount should be applied (10% off)")
-                            .isEqualTo(180.0);
-                });
+                .untilAsserted(() -> assertThat(orderRepository.findById(response.orderId()))
+                        .isPresent()
+                        .hasValueSatisfying(processedOrder -> {
+                            assertThat(processedOrder.isProcessed())
+                                    .as("Order should be marked as processed by Kafka consumer")
+                                    .isTrue();
+                            assertThat(processedOrder.getAmount())
+                                    .as("Discount should be applied (10% off)")
+                                    .isEqualTo(180.0);
+                        }));
     }
 
     @Test
@@ -96,12 +96,12 @@ class OrderServiceIntegrationTest {
         await()
                 .atMost(Duration.ofSeconds(25))
                 .pollInterval(Duration.ofMillis(500))
-                .untilAsserted(() -> {
-                    Optional<Order> processedOrder = orderRepository.findById(response.orderId());
-                    assertThat(processedOrder).isPresent();
-                    assertThat(processedOrder.get().isProcessed()).isTrue();
-                    assertThat(processedOrder.get().getAmount()).isEqualTo(180.0);
-                });
+                .untilAsserted(() -> assertThat(orderRepository.findById(response.orderId()))
+                        .isPresent()
+                        .hasValueSatisfying(processedOrder -> {
+                            assertThat(processedOrder.isProcessed()).isTrue();
+                            assertThat(processedOrder.getAmount()).isEqualTo(180.0);
+                        }));
 
         // Send a duplicate OrderPlacedEvent for the same orderId
         OrderPlacedEvent duplicateEvent = new OrderPlacedEvent(
@@ -122,13 +122,13 @@ class OrderServiceIntegrationTest {
                 .during(Duration.ofSeconds(3)) // Verify that during this window the state stays stable
                 .atMost(Duration.ofSeconds(5))
                 .pollInterval(Duration.ofMillis(500))
-                .untilAsserted(() -> {
-                    Optional<Order> order = orderRepository.findById(response.orderId());
-                    assertThat(order).isPresent();
-                    assertThat(order.get().isProcessed()).isTrue();
-                    assertThat(order.get().getAmount())
-                            .as("Discount must not be reapplied on duplicate event")
-                            .isEqualTo(180.0);
-                });
+                .untilAsserted(() -> assertThat(orderRepository.findById(response.orderId()))
+                        .isPresent()
+                        .hasValueSatisfying(order -> {
+                            assertThat(order.isProcessed()).isTrue();
+                            assertThat(order.getAmount())
+                                    .as("Discount must not be reapplied on duplicate event")
+                                    .isEqualTo(180.0);
+                        }));
     }
 }

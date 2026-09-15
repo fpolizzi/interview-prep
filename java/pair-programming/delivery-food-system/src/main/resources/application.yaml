@@ -1,30 +1,29 @@
 spring:
-  application.name: "delivery-food-system"
-  web:
-    error:
-      include-message: always
-      include-binding-errors: always
+  application:
+    name: delivery-food-system
+
   kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
     consumer:
-      properties:
-        spring.json.trusted.packages: "*"
+      group-id: ${KAFKA_CONSUMER_GROUP:consumer-group}
+      auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-      group-id: "consumer-group"
-      auto-offset-reset: earliest
-    bootstrap-servers: "localhost:9092"
-  data:
-    mongodb:
-      uri: "mongodb://localhost:27017/mongodatabase"
+      properties:
+        spring.json.trusted.packages: "*"
+
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
   mongodb:
-    uri: "mongodb://localhost:27017/mongodatabase"
-    uuid-representation: standard
     representation:
       uuid: standard
+    uri: ${MONGODB_URI:mongodb://localhost:27017/mongodatabase}
 
 discount:
   percentage: 0.10
-  threshold: 100
+  threshold: 100.0

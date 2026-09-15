@@ -1,4 +1,4 @@
-package com.foodtakeway;
+package com.foodtakeway.api;
 
 import com.foodtakeway.dto.OrderRequestDto;
 import com.foodtakeway.dto.OrderResponseDto;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class OrderApi {
 
-    private OrderService orderService;
+    private final OrderService orderService;
 
     public OrderApi(OrderService orderService) {
         this.orderService = orderService;

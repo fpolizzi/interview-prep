@@ -1,6 +1,6 @@
 package com.foodtakeway.service.impl;
 
-import com.foodtakeway.Order;
+import com.foodtakeway.model.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

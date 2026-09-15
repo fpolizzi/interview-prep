@@ -1,7 +1,7 @@
 package com.foodtakeway.listener;
 
-import com.foodtakeway.Order;
-import com.foodtakeway.OrderRepository;
+import com.foodtakeway.model.Order;
+import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.event.OrderPlacedEvent;
 import com.foodtakeway.event.OrderProcessedEvent;
 import com.foodtakeway.service.DiscountService;

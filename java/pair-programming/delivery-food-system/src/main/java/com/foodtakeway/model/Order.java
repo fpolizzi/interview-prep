@@ -1,4 +1,4 @@
-package com.foodtakeway;
+package com.foodtakeway.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
