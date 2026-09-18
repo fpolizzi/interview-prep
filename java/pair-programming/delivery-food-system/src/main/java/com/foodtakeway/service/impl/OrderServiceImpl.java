@@ -1,8 +1,8 @@
 package com.foodtakeway.service.impl;
 
+import com.foodtakeway.config.KafkaTopicProperties;
 import com.foodtakeway.dto.OrderResponseDto;
 import com.foodtakeway.event.OrderPlacedEvent;
-import com.foodtakeway.listener.OrderEventListener;
 import com.foodtakeway.model.Order;
 import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.service.OrderService;
@@ -18,10 +18,14 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTopicProperties topicProperties;
 
-    public OrderServiceImpl(OrderRepository orderRepository, KafkaTemplate<String, Object> kafkaTemplate) {
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            KafkaTemplate<String, Object> kafkaTemplate,
+                            KafkaTopicProperties topicProperties) {
         this.orderRepository = orderRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.topicProperties = topicProperties;
     }
 
     // Receive order and persist, then emit OrderPlacedEvent for async processing
@@ -40,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
                 .createdAt(Instant.now())
                 .build();
 
-        kafkaTemplate.send(OrderEventListener.TOPIC_ORDER_PLACED, String.valueOf(order.getOrderId()), event);
+        kafkaTemplate.send(topicProperties.orderPlaced(), String.valueOf(order.getOrderId()), event);
         log.info("Event Dispatched: OrderPlaced -> {}", order.getOrderId());
 
         return new OrderResponseDto(

@@ -1,18 +1,21 @@
 package com.foodtakeway;
 
+import com.foodtakeway.config.KafkaTopicProperties;
 import com.foodtakeway.dto.OrderResponseDto;
 import com.foodtakeway.event.OrderPlacedEvent;
-import com.foodtakeway.listener.OrderEventListener;
 import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.service.OrderService;
+import com.foodtakeway.support.TestRepositoryConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -21,9 +24,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @DirtiesContext
-@EmbeddedKafka(partitions = 1, topics = {"order-placed-topic", "order-processed-topic"})
-class OrderServiceIntegrationTest {
+@Import(TestRepositoryConfig.class)
+@EmbeddedKafka(
+        partitions = 1,
+        topics = {"order-placed-topic", "order-processed-topic"},
+        bootstrapServersProperty = "spring.kafka.bootstrap-servers"
+)
+class OrderServiceIT {
 
     @Autowired
     private OrderService orderService;
@@ -33,6 +42,9 @@ class OrderServiceIntegrationTest {
 
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Autowired
+    private KafkaTopicProperties topicProperties;
 
     @BeforeEach
     void setUp() {
@@ -50,7 +62,7 @@ class OrderServiceIntegrationTest {
         OrderResponseDto response = orderService.placeOrder(originalAmount, userEmail);
         long responseTime = System.currentTimeMillis() - startTime;
 
-        // Assert: Immediate response (< 1s) and initial state
+        // Assert: Immediate response (< 1.5s) and initial state
         assertThat(responseTime)
                 .as("Response should return immediately without waiting for long-running process")
                 .isLessThan(1500);
@@ -67,7 +79,7 @@ class OrderServiceIntegrationTest {
                 .hasValueSatisfying(order -> assertThat(order.isProcessed()).isFalse());
 
         // Assert: Asynchronous processing completes via Kafka listener
-        // Availability polls MongoDB until the listener calculates discount and sets isProcessed = true
+        // Availability polls until the listener calculates discount and sets isProcessed = true
         await()
                 .atMost(Duration.ofSeconds(25))
                 .pollInterval(Duration.ofMillis(500))
@@ -112,14 +124,14 @@ class OrderServiceIntegrationTest {
         );
 
         kafkaTemplate.send(
-                OrderEventListener.TOPIC_ORDER_PLACED,
+                topicProperties.orderPlaced(),
                 response.orderId().toString(),
                 duplicateEvent
         );
 
-        // Assert: State remains unchanged (discount is NOT applied a second time, e.g. 180 -> 162)
+        // Assert: State remains unchanged (discount is NOT applied a second time)
         await()
-                .during(Duration.ofSeconds(3)) // Verify that during this window the state stays stable
+                .during(Duration.ofSeconds(3))
                 .atMost(Duration.ofSeconds(5))
                 .pollInterval(Duration.ofMillis(500))
                 .untilAsserted(() -> assertThat(orderRepository.findById(response.orderId()))

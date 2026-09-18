@@ -24,6 +24,12 @@ spring:
       uuid: standard
     uri: ${MONGODB_URI:mongodb://localhost:27017/mongodatabase}
 
+app:
+  kafka:
+    topics:
+      order-placed: ${KAFKA_TOPIC_ORDER_PLACED:order-placed-topic}
+      order-processed: ${KAFKA_TOPIC_ORDER_PROCESSED:order-processed-topic}
+
 discount:
   percentage: 0.10
   threshold: 100.0

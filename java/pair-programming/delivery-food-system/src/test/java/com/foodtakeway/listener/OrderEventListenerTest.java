@@ -1,5 +1,6 @@
 package com.foodtakeway.listener;
 
+import com.foodtakeway.config.KafkaTopicProperties;
 import com.foodtakeway.model.Order;
 import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.event.OrderPlacedEvent;
@@ -12,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 
@@ -35,6 +37,9 @@ class OrderEventListenerTest {
 
     @Mock
     private KafkaTemplate<String, Object> kafkaTemplate;
+
+    @Spy
+    private KafkaTopicProperties topicProperties = new KafkaTopicProperties("order-placed-topic", "order-processed-topic");
 
     @InjectMocks
     private OrderEventListener underTest;
@@ -79,7 +84,7 @@ class OrderEventListenerTest {
         assertThat(savedOrder.getAmount()).isEqualTo(discountedAmount);
 
         verify(kafkaTemplate, times(1)).send(
-                eq(OrderEventListener.TOPIC_ORDER_PROCESSED),
+                eq("order-processed-topic"),
                 eq(orderId.toString()),
                 processedEventCaptor.capture()
         );

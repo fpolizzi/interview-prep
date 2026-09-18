@@ -1,11 +1,25 @@
 package com.foodtakeway.repository;
 
 import com.foodtakeway.model.Order;
-import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-public interface OrderRepository extends MongoRepository<Order, UUID> {
+/**
+ * Domain repository interface for Order entity.
+ */
+public interface OrderRepository {
+
+    Order save(Order order);
+
+    Optional<Order> findById(UUID orderId);
+
+    List<Order> findAll();
+
+    void deleteById(UUID orderId);
+
+    void deleteAll();
+
+    boolean existsById(UUID orderId);
 }
