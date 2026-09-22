@@ -1,0 +1,25 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration
+      - org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration
+      - org.springframework.boot.data.mongodb.autoconfigure.DataMongoRepositoriesAutoConfiguration
+  data:
+    mongodb:
+      repositories:
+        enabled: false
+
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      group-id: test-consumer-group
+
+app:
+  kafka:
+    topics:
+      order-placed: order-placed-topic
+      order-processed: order-processed-topic
+
+discount:
+  percentage: 0.10
+  threshold: 100.0

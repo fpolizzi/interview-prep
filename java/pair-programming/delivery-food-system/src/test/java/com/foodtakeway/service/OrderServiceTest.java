@@ -1,8 +1,12 @@
 package com.foodtakeway.service;
 
-import com.foodtakeway.Order;
-import com.foodtakeway.OrderRepository;
+import com.foodtakeway.config.KafkaTopicProperties;
 import com.foodtakeway.dto.OrderResponseDto;
+import com.foodtakeway.event.OrderPlacedEvent;
+import com.foodtakeway.exception.OrderProcessingException;
+import com.foodtakeway.model.Order;
+import com.foodtakeway.repository.OrderRepository;
+import com.foodtakeway.service.impl.OrderServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,9 +14,18 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -25,74 +38,110 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private DiscountService discountService;
+    private KafkaTemplate<Object, Object> kafkaTemplate;
+
+    @Spy
+    private KafkaTopicProperties topicProperties = new KafkaTopicProperties("order-placed-topic", "order-processed-topic");
 
     @InjectMocks
-    private OrderService underTest;
+    private OrderServiceImpl underTest;
 
     @Captor
-    private ArgumentCaptor<Order> orderArgumentCaptor;
+    private ArgumentCaptor<Order> orderCaptor;
+
+    @Captor
+    private ArgumentCaptor<OrderPlacedEvent> eventCaptor;
+
+    private static final double AMOUNT = 100.0;
+    private static final String EMAIL = "john.doe@example.com";
 
     @Test
-    @DisplayName("Should create and persist order with correct user details and initial amount")
-    void shouldPersistOrderWhenPlaced() {
+    @DisplayName("Should persist order as unprocessed")
+    void shouldPersistOrderAsUnprocessed() {
         // given
-        double amount = 100.0;
-        String userEmail = "john.doe@example.com";
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(inv -> {
+                    Order o = inv.getArgument(0);
+                    return o; // or set an ID if that's what the repo does
+                });
 
         // when
-        OrderResponseDto response = underTest.placeOrder(amount, userEmail);
+        underTest.placeOrder(AMOUNT, EMAIL);
 
         // then
-        verify(orderRepository, times(1)).save(orderArgumentCaptor.capture());
-        Order savedOrder = orderArgumentCaptor.getValue();
+        verify(orderRepository).save(orderCaptor.capture());
+        Order saved = orderCaptor.getValue();
 
-        assertThat(savedOrder).isNotNull();
-        assertThat(savedOrder.getOrderId()).isNotNull();
-        assertThat(savedOrder.getUserEmail()).isEqualTo(userEmail);
-        assertThat(response.userEmail()).isEqualTo(userEmail);
+        assertAll(
+                () -> assertThat(saved.getOrderId()).isNotNull(),
+                () -> assertThat(saved.getUserEmail()).isEqualTo(EMAIL),
+                () -> assertThat(saved.isProcessed()).isFalse()
+        );
     }
 
     @Test
-    @DisplayName("Should apply discount when DiscountService reduces the order amount")
-    void shouldApplyDiscountWhenEligible() {
-        // given
-        double initialAmount = 200.0;
-        double discountedAmount = 180.0;
-        String userEmail = "jane.doe@example.com";
-
-        // Mock DiscountService modifying the order's amount
-        doAnswer(invocation -> {
-            Order order = invocation.getArgument(0);
-            order.setAmount(discountedAmount);
-            return null;
-        }).when(discountService).calculateDiscount(any(Order.class));
-
+    @DisplayName("Should return correct response DTO")
+    void shouldReturnCorrectResponse() {
         // when
-        OrderResponseDto response = underTest.placeOrder(initialAmount, userEmail);
+        OrderResponseDto response = underTest.placeOrder(AMOUNT, EMAIL);
 
         // then
-        verify(discountService).calculateDiscount(any(Order.class));
-        assertThat(response.amount()).isEqualTo(discountedAmount);
-        assertThat(response.isProcessed()).isTrue();
+        assertAll(
+                () -> assertThat(response.userEmail()).isEqualTo(EMAIL),
+                () -> assertThat(response.amount()).isEqualTo(AMOUNT),
+                () -> assertThat(response.isProcessed()).isFalse()
+        );
     }
 
     @Test
-    @DisplayName("Should not apply discount when DiscountService does not modify amount")
-    void shouldNotApplyDiscountWhenNotEligible() {
+    @DisplayName("Should publish OrderPlacedEvent to Kafka")
+    void shouldPublishOrderPlacedEvent() {
         // given
-        double amount = 50.0;
-        String userEmail = "jane.doe@example.com";
-
-        // DiscountService does not change number of orders under threshold
-        doNothing().when(discountService).calculateDiscount(any(Order.class));
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(inv -> {
+                    Order o = inv.getArgument(0);
+                    o.setOrderId(UUID.randomUUID()); // simulate ID assignment
+                    return o;
+                });
 
         // when
-        OrderResponseDto response = underTest.placeOrder(amount, userEmail);
+        underTest.placeOrder(AMOUNT, EMAIL);
 
         // then
-        verify(discountService).calculateDiscount(any(Order.class));
-        assertThat(response.amount()).isEqualTo(amount);
-        assertThat(response.isProcessed()).isTrue();
+        verify(kafkaTemplate).send(
+                eq("order-placed-topic"),
+                anyString(),
+                eventCaptor.capture()
+        );
+
+        OrderPlacedEvent event = eventCaptor.getValue();
+        assertAll(
+                () -> assertThat(event.getAmount()).isEqualTo(AMOUNT),
+                () -> assertThat(event.getUserEmail()).isEqualTo(EMAIL),
+                () -> assertThat(event.getCreatedAt()).isNotNull()
+        );
+    }
+
+    @Test
+    @DisplayName("Should compensate by deleting order and throwing exception when Kafka publishing fails")
+    void shouldCompensateAndThrowExceptionWhenKafkaPublishingFails() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(inv -> {
+                    Order o = inv.getArgument(0);
+                    o.setOrderId(orderId);
+                    return o;
+                });
+        CompletableFuture<SendResult<String, Object>> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("Kafka broker unreachable"));
+        doReturn(failedFuture).when(kafkaTemplate).send(anyString(), anyString(), any());
+
+        // when / then
+        assertThatThrownBy(() -> underTest.placeOrder(AMOUNT, EMAIL))
+                .isInstanceOf(OrderProcessingException.class)
+                .hasMessageContaining("Order could not be queued for processing");
+
+        verify(orderRepository).deleteById(orderId);
     }
 }

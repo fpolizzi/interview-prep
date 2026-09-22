@@ -1,23 +1,35 @@
 spring:
-  application.name: "delivery-food-system"
+  application:
+    name: delivery-food-system
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:consumer-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
   web:
     error:
       include-message: always
       include-binding-errors: always
-  kafka:
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    consumer:
-      properties.spring.json.trusted.packages: com.foodtakeway.codechallenge.examples.event
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      group-id: "consumer-group"
-      auto-offset-reset: earliest
-    bootstrap-servers: "localhost:9092"
   mongodb:
-    uri: "mongodb://localhost:27017/mongodatabase"
+    representation:
+      uuid: standard
+    uri: ${MONGODB_URI:mongodb://localhost:27017/mongodatabase}
+
+app:
+  kafka:
+    topics:
+      order-placed: ${KAFKA_TOPIC_ORDER_PLACED:order-placed-topic}
+      order-processed: ${KAFKA_TOPIC_ORDER_PROCESSED:order-processed-topic}
 
 discount:
-  percentage: 0.9
-  threshold: 100
+  percentage: 0.10
+  threshold: 100.0

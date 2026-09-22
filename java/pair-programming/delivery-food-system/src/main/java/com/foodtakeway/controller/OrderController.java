@@ -1,4 +1,4 @@
-package com.foodtakeway;
+package com.foodtakeway.controller;
 
 import com.foodtakeway.dto.OrderRequestDto;
 import com.foodtakeway.dto.OrderResponseDto;
@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("order")
 @Slf4j
-public class OrderApi {
+@RestController
+@RequestMapping("/api/v1/orders")
+public class OrderController {
 
-    private OrderService orderService;
+    private final OrderService orderService;
 
-    public OrderApi(OrderService orderService) {
+    public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 

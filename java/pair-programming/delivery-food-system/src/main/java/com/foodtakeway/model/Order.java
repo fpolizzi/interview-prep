@@ -1,21 +1,27 @@
-package com.foodtakeway;
+package com.foodtakeway.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import lombok.ToString;
 
 import java.util.UUID;
 
-@NoArgsConstructor
-@AllArgsConstructor
+/**
+ * Pure domain model representing an Order, decoupled from persistence frameworks.
+ */
 @Getter
 @Setter
-@Document
+@Builder
+@ToString
+@EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
 public class Order {
-    @Id
+
     private UUID orderId;
     private double amount;
     private String userEmail;
@@ -26,6 +32,10 @@ public class Order {
         this.amount = amount;
         this.isProcessed = false;
         this.userEmail = userEmail;
+    }
+
+    public void markAsProcessed() {
+        this.isProcessed = true;
     }
 
     // This method should stay as it is. Just pretend it is a long-time operation we need to do.
