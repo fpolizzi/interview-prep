@@ -1,10 +1,12 @@
 package com.foodtakeway.listener;
 
 import com.foodtakeway.config.KafkaTopicProperties;
-import com.foodtakeway.model.Order;
-import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.event.OrderPlacedEvent;
 import com.foodtakeway.event.OrderProcessedEvent;
+import com.foodtakeway.exception.OrderNotFoundException;
+import com.foodtakeway.exception.OrderProcessingException;
+import com.foodtakeway.model.Order;
+import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.service.DiscountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -12,6 +14,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -19,12 +22,12 @@ public class OrderEventListener {
 
     private final OrderRepository orderRepository;
     private final DiscountService discountService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<Object, Object> kafkaTemplate;
     private final KafkaTopicProperties topicProperties;
 
     public OrderEventListener(OrderRepository orderRepository,
                               DiscountService discountService,
-                              KafkaTemplate<String, Object> kafkaTemplate,
+                              KafkaTemplate<Object, Object> kafkaTemplate,
                               KafkaTopicProperties topicProperties) {
         this.orderRepository = orderRepository;
         this.discountService = discountService;
@@ -37,12 +40,10 @@ public class OrderEventListener {
         log.info("Received OrderPlacedEvent for order: {}", event.getOrderId());
 
         Order order = orderRepository.findById(event.getOrderId())
-                .orElse(null);
-
-        if (order == null) {
-            log.error("Order with id {} not found in repository.", event.getOrderId());
-            return;
-        }
+                .orElseThrow(() -> {
+                    log.error("Order with id {} not found in repository.", event.getOrderId());
+                    return new OrderNotFoundException(event.getOrderId());
+                });
 
         // Idempotency check
         if (order.isProcessed()) {
@@ -70,7 +71,17 @@ public class OrderEventListener {
                 .processedAt(Instant.now())
                 .build();
 
-        kafkaTemplate.send(topicProperties.orderProcessed(), String.valueOf(order.getOrderId()), processedEvent);
-        log.info("Event Dispatched: OrderProcessed -> {}", order.getOrderId());
+        try {
+            kafkaTemplate.send(topicProperties.orderProcessed(), String.valueOf(order.getOrderId()), processedEvent)
+                    .get(3, TimeUnit.SECONDS);
+            log.info("Event Dispatched: OrderProcessed -> {}", order.getOrderId());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Thread interrupted while dispatching OrderProcessedEvent for order: {}", order.getOrderId(), e);
+            throw new OrderProcessingException("Failed to dispatch OrderProcessedEvent due to thread interruption", e);
+        } catch (Exception e) {
+            log.error("Failed to dispatch OrderProcessedEvent for order: {}", order.getOrderId(), e);
+            throw new OrderProcessingException("Failed to dispatch OrderProcessedEvent", e);
+        }
     }
 }

@@ -1,10 +1,12 @@
 package com.foodtakeway.listener;
 
 import com.foodtakeway.config.KafkaTopicProperties;
-import com.foodtakeway.model.Order;
-import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.event.OrderPlacedEvent;
 import com.foodtakeway.event.OrderProcessedEvent;
+import com.foodtakeway.exception.OrderNotFoundException;
+import com.foodtakeway.exception.OrderProcessingException;
+import com.foodtakeway.model.Order;
+import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.service.DiscountService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,12 +18,15 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -36,7 +41,7 @@ class OrderEventListenerTest {
     private DiscountService discountService;
 
     @Mock
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private KafkaTemplate<Object, Object> kafkaTemplate;
 
     @Spy
     private KafkaTopicProperties topicProperties = new KafkaTopicProperties("order-placed-topic", "order-processed-topic");
@@ -118,20 +123,42 @@ class OrderEventListenerTest {
     }
 
     @Test
-    @DisplayName("Should handle missing order gracefully without throwing exception")
-    void shouldHandleMissingOrderGracefully() {
+    @DisplayName("Should throw OrderNotFoundException when order is not found in repository")
+    void shouldThrowOrderNotFoundExceptionWhenOrderNotFound() {
         // given
         UUID orderId = UUID.randomUUID();
         OrderPlacedEvent event = new OrderPlacedEvent(orderId, 100.0, "missing@example.com", Instant.now());
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
 
-        // when
-        underTest.handleOrderPlaced(event);
+        // when / then
+        assertThatThrownBy(() -> underTest.handleOrderPlaced(event))
+                .isInstanceOf(OrderNotFoundException.class)
+                .hasMessageContaining(orderId.toString());
 
-        // then
         verify(discountService, never()).calculateDiscount(any());
         verify(orderRepository, never()).save(any());
         verify(kafkaTemplate, never()).send(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Should throw OrderProcessingException when publishing OrderProcessedEvent fails")
+    void shouldThrowExceptionWhenOrderProcessedEventPublishingFails() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        Order order = new Order(100.0, "jane.doe@example.com");
+        order.setOrderId(orderId);
+
+        OrderPlacedEvent event = new OrderPlacedEvent(orderId, 100.0, "jane.doe@example.com", Instant.now());
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        CompletableFuture<SendResult<String, Object>> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("Kafka broker error"));
+        doReturn(failedFuture).when(kafkaTemplate).send(anyString(), anyString(), any());
+
+        // when / then
+        assertThatThrownBy(() -> underTest.handleOrderPlaced(event))
+                .isInstanceOf(OrderProcessingException.class)
+                .hasMessageContaining("Failed to dispatch OrderProcessedEvent");
     }
 }

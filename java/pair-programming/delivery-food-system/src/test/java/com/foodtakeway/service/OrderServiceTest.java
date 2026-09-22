@@ -3,6 +3,7 @@ package com.foodtakeway.service;
 import com.foodtakeway.config.KafkaTopicProperties;
 import com.foodtakeway.dto.OrderResponseDto;
 import com.foodtakeway.event.OrderPlacedEvent;
+import com.foodtakeway.exception.OrderProcessingException;
 import com.foodtakeway.model.Order;
 import com.foodtakeway.repository.OrderRepository;
 import com.foodtakeway.service.impl.OrderServiceImpl;
@@ -16,10 +17,13 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -34,7 +38,7 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private KafkaTemplate<Object, Object> kafkaTemplate;
 
     @Spy
     private KafkaTopicProperties topicProperties = new KafkaTopicProperties("order-placed-topic", "order-processed-topic");
@@ -116,5 +120,28 @@ class OrderServiceTest {
                 () -> assertThat(event.getUserEmail()).isEqualTo(EMAIL),
                 () -> assertThat(event.getCreatedAt()).isNotNull()
         );
+    }
+
+    @Test
+    @DisplayName("Should compensate by deleting order and throwing exception when Kafka publishing fails")
+    void shouldCompensateAndThrowExceptionWhenKafkaPublishingFails() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(inv -> {
+                    Order o = inv.getArgument(0);
+                    o.setOrderId(orderId);
+                    return o;
+                });
+        CompletableFuture<SendResult<String, Object>> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RuntimeException("Kafka broker unreachable"));
+        doReturn(failedFuture).when(kafkaTemplate).send(anyString(), anyString(), any());
+
+        // when / then
+        assertThatThrownBy(() -> underTest.placeOrder(AMOUNT, EMAIL))
+                .isInstanceOf(OrderProcessingException.class)
+                .hasMessageContaining("Order could not be queued for processing");
+
+        verify(orderRepository).deleteById(orderId);
     }
 }
